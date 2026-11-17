@@ -1,5 +1,3 @@
-![build](https://github.com/zhouyp001/GPUPluse/actions/workflows/build.yml/badge.svg)
-
 # 服务器监控
 
 浏览器端实时查看的多服务器指标监控：**Java Agent 采集 → 纯 Netty 中央服务 → 纯前端面板（WebSocket 推送，不落库）**。
