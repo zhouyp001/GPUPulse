@@ -77,3 +77,47 @@ JAVA_TOOL_OPTIONS="-Dserver.port=9090" scripts/run-server.sh
 # 断线重试节奏：首次失败后等待 / 退避上限 / 每次翻倍倍数（默认 1000ms / 30000ms / 2.0）
 JAVA_TOOL_OPTIONS="-Dagent.retry.initial.ms=1000 -Dagent.retry.max.ms=30000 -Dagent.retry.multiplier=2.0" scripts/run-agent.sh
 ```
+
+### 自定义端口（详细说明）
+
+**中央服务只监听一个端口**（`server.port`，默认 `8080`），这一个端口同时承载三件事：
+
+1. Agent 上报接口（HTTP `POST /report`）
+2. 面板 WebSocket（`/ws`）
+3. 静态前端页面
+
+所以**改端口只需改服务端这一处**，上报、广播、面板会一起切到新端口。
+
+**Agent 端不监听端口**，只配置要上报到的中央服务地址：`agent.server.host` + `agent.server.port`（默认 `127.0.0.1:8080`）。这里的 `agent.server.port` 指的就是**中央服务的监听端口**，不是 Agent 自己的端口。
+
+> ⚠️ **关键**：改了服务端监听端口，就**必须**把每个 Agent 的 `agent.server.port` 改成同一个值，否则 Agent 往旧端口上报（失败、退避重连），浏览器也访问不到面板。
+
+#### 方式一：启动时用 `-D` 覆盖（临时调试最方便）
+
+```bash
+# ① 服务端改监听端口
+JAVA_TOOL_OPTIONS="-Dserver.port=9090" scripts/run-server.sh
+
+# ② 每个 Agent 同步改目标端口（host 也要指向监控机，跨机时别用 127.0.0.1）
+JAVA_TOOL_OPTIONS="-Dagent.server.port=9090 -Dagent.server.host=<监控机IP>" scripts/run-agent.sh
+
+# ③ 浏览器访问新端口
+# http://localhost:9090/   （本机） 或  http://<监控机IP>:9090/
+```
+
+#### 方式二：改配置文件后重新打包（长期部署推荐）
+
+编辑 `server/src/main/resources/server.properties` 与 `agent/src/main/resources/agent.properties` 中的端口，然后 `mvn -DskipTests package` 重新打包。所有 Agent 与浏览器都固定用新端口，无需每次启动带参数。打包部署后各端口的设置见 [scripts/DEPLOY.md](scripts/DEPLOY.md)。
+
+#### 场景对照表
+
+| 场景 | 服务端 `server.port` | 每个 Agent `agent.server.port` | 浏览器地址 |
+|---|---|---|---|
+| 默认 | （不设，8080） | （不设，8080） | `http://<监控机IP>:8080/` |
+| 换端口 | `-Dserver.port=9090` | `-Dagent.server.port=9090` | `http://<监控机IP>:9090/` |
+
+#### 注意
+
+- **端口被占用**：启动失败，日志报 `Address already in use`，先确认该端口没被其他进程占用（Windows 用 `netstat -ano | findstr :8080`，Linux 用 `ss -ltnp | grep 8080`）。
+- **防火墙 / 安全组**：需放行该端口的 TCP 入站，否则 Agent 连不上、浏览器打不开。
+- 服务端只有一个端口，**不存在**「上报端口」和「面板端口」分开配的情况；如果内网/外网需要不同端口，那是网络层端口转发（NAT / 反向代理）的事，与应用配置无关。
