@@ -5,8 +5,8 @@ set -Eeuo pipefail
 trap 'echo "[ERR] 第 $LINENO 行执行失败: $BASH_COMMAND" >&2' ERR
 cd "$(dirname "$0")/.."
 
-echo "==> 构建模块 (mvn package)"
-mvn -DskipTests package
+echo "==> 构建模块 (mvn install)"
+mvn -DskipTests install
 
 echo "==> 拷贝依赖到各模块 target/lib"
 bash scripts/copy-libs.sh
