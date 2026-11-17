@@ -19,6 +19,7 @@ tail -f app.log     # 日志
 ```
 
 - 面板地址：`http://<监控机IP>:8080/`
+- **对外 API**：`GET /api/gpu-load` 返回各服务器 GPU 负载（按空闲度升序，`?all=true` 含离线），供三方系统（如 LLM 调度路由）挑选空闲服务器；详见仓库 README「对外 API」。
 - 改端口：`JAVA_TOOL_OPTIONS="-Dserver.port=9090" ./start.sh`
   > ⚠️ 改端口后，**每台 Agent 的 `agent.server.port` 也要同步改成同一个值**，否则 Agent 仍上报旧端口、面板也访问不到。详见下方 agent 包一节。
 

@@ -54,6 +54,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **双视图**：顶栏「标准 / 精简」切换。标准视图用 Canvas 环形仪表；**精简视图**为纯文本紧凑表格（每 GPU 一行：#/型号/利用率/温度/显存/功耗），无图标、高信息密度，选择以 `localStorage` 持久化。
 - **清除离线记录**：顶栏「清除离线」按钮调用 `POST /api/servers/clear-offline`，服务端删除所有离线/未连接注册项并向面板广播 `remove` 消息移除对应卡片；**在线记录保留**。
+- **对外 GPU 负载接口**：`GET /api/gpu-load` 返回各服务器 GPU 负载（按 `load` 升序、最空闲在前；`?all=true` 含离线），供三方系统（如 LLM 调度路由）挑选/切换空闲服务器。`load` = 最高一张 GPU 利用率，无 GPU 为 `-1`；只读内存最新帧，不落库。契约见 README「对外 API」。
 
 ## 指标模型与自定义指标扩展（核心设计）
 

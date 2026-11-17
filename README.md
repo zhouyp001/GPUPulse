@@ -8,7 +8,7 @@
 |---|---|
 | `common` | 指标帧模型 `MetricFrame` / `GpuInfo` + JSON 工具（Agent/服务器/前端共用契约） |
 | `agent` | 被监控端：GPU 采集器（nvidia-smi 解析）+ 自定义指标 SPI + HTTP 上报（采集/上报解耦，断线指数退避重连） |
-| `server` | 纯 Netty：接收上报（`/report`）、WebSocket 广播（`/ws`）、托管 `web/` 静态面板、清空离线记录（`POST /api/servers/clear-offline`） |
+| `server` | 纯 Netty：接收上报（`/report`）、WebSocket 广播（`/ws`）、托管 `web/` 静态面板、清空离线记录（`POST /api/servers/clear-offline`）、GPU 负载查询（`GET /api/gpu-load`） |
 | `web` | 纯 HTML/CSS/JS 面板：Canvas 环形仪表 + 精简表格双视图 + 断线重连，无框架、无构建 |
 
 ## 构建
@@ -38,6 +38,71 @@ scripts/run-agent.sh
 - **标准 / 精简双视图**：顶栏切换。标准视图用 Canvas 环形仪表展示利用率/温度/显存/功耗；精简视图用纯文本紧凑表格（每 GPU 一行），无图标、信息密度更高。选择以 `localStorage` 持久化，刷新保留。
 - **清除离线记录**：顶栏「清除离线」按钮，删除所有离线/未连接的服务器记录（在线的不受影响），避免历史残留卡片堆积。
 - 每张服务器卡片右上角显示在线/离线状态与最近上报时间；断线自动退避重连。
+
+## 对外 API（供三方系统集成）
+
+中央服务除面板外，还提供 HTTP 接口供外部系统调用（只读内存最新帧，不落库）。
+
+### GET /api/gpu-load —— 各服务器 GPU 负载（按空闲度排序）
+
+供三方系统按负载挑选 / 切换服务器（如 **LLM 调度路由**：先查哪台机器最空闲，再调用该机器上的推理服务）。
+
+| 查询参数 | 默认 | 说明 |
+|---|---|---|
+| `all` | `false` | `true` 时包含离线服务器（`online:false`、`load:-1` 排最后），否则只返回在线 |
+
+响应（`servers` 按 `load` 从低到高，**最空闲在前**）：
+
+```json
+{
+  "type": "gpu-load",
+  "timestamp": 1737000000000,
+  "servers": [
+    {
+      "server": "web01",
+      "online": true,
+      "lastSeen": 1737000000000,
+      "gpuCount": 2,
+      "load": 35.0,
+      "utilizationAvg": 30.0,
+      "utilizationMax": 35.0,
+      "memoryUsedGb": 6.0,
+      "memoryTotalGb": 16.0,
+      "freeMemoryGb": 10.0,
+      "gpus": [
+        {
+          "index": 0,
+          "name": "NVIDIA A100",
+          "utilization": 35.0,
+          "temperature": 62.0,
+          "memoryUsedMb": 4096,
+          "memoryTotalMb": 8192,
+          "freeMemoryMb": 4096,
+          "powerDraw": 180.0
+        }
+      ]
+    }
+  ]
+}
+```
+
+字段说明：
+
+- `load`：该服务器**最高一张 GPU 的利用率**（任何一张卡忙即视为忙），作为空闲度主排序依据；无 GPU 时为 `-1`。
+- `utilizationAvg` / `utilizationMax`：所有 GPU 利用率均值 / 最大值。
+- `memoryUsedGb` / `memoryTotalGb` / `freeMemoryGb`：整机显存（MB → GB）。
+- `gpus[]`：每张 GPU 明细，显存字段为 MB（`memoryUsedMb` / `memoryTotalMb` / `freeMemoryMb`）。
+
+示例（取最空闲的在线服务器）：
+
+```bash
+curl -s http://<监控机IP>:8080/api/gpu-load | jq -r '.servers[0].server'
+```
+
+### 其他接口
+
+- `GET /api/servers`：全量快照（调试 / 非 WebSocket 客户端用）。
+- `POST /api/servers/clear-offline`：清空所有离线记录（在线保留）。
 
 ## 打包部署（生成两个自包含发布包）
 
