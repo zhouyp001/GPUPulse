@@ -1,0 +1,336 @@
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --border: #21262d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --ok: #3fb950;
+  --off: #f85149;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* 强制 hidden 生效：否则 #servers 的 display:grid 等作者样式会覆盖 hidden 属性 */
+[hidden] { display: none !important; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+
+.brand { font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.logo { color: var(--accent); }
+
+/* 视图切换（标准 / 精简） */
+.view-toggle { display: flex; gap: 4px; }
+.vt-btn {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+}
+.vt-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, .12);
+}
+
+.chip {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--bg);
+}
+.chip.ok { color: var(--ok); border-color: var(--ok); }
+.chip.err { color: var(--off); border-color: var(--off); }
+
+.servers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+  gap: 16px;
+  padding: 20px;
+  align-items: start;   /* 各卡按自身内容定高，不被同行的最高卡拉伸 */
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  transition: opacity .3s;
+}
+.card.off { opacity: .5; }
+
+.card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.card-head h2 { font-size: 15px; font-weight: 600; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--off); flex: none; }
+.dot.on { background: var(--ok); }
+.gpu-count {
+  font-size: 11px;
+  color: var(--accent);
+  background: rgba(88, 166, 255, .12);
+  border: 1px solid rgba(88, 166, 255, .3);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.last-seen { margin-left: auto; font-size: 12px; color: var(--muted); }
+
+/* 每张 GPU 一个纵向子面板，多卡时自上而下排列 */
+.gpus { display: flex; flex-direction: column; gap: 12px; }
+.gpu {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--bg);
+}
+.gpu-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.gpu-badge {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(88, 166, 255, .12);
+  border: 1px solid rgba(88, 166, 255, .3);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.gpu-name {
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.gpu-title { font-size: 12px; color: var(--muted); }
+.gpu-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+
+.gauge-cell { text-align: center; }
+.gauge-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.gauge-val { font-size: 12px; font-weight: 600; margin-top: 2px; }
+
+.customs {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.metric {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.metric .k { color: var(--muted); }
+.metric .v { font-weight: 600; font-size: 15px; margin-top: 2px; }
+
+.empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 80px 0;
+  font-size: 14px;
+}
+
+/* ---------- 精简视图：高信息密度、无图标 ---------- */
+body.compact .servers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;   /* 卡片向左靠 */
+  align-items: flex-start;     /* 各卡按自身内容定高，顶部对齐（不被最高卡拉伸） */
+  align-content: flex-start;   /* 多行时整体向上靠 */
+  gap: 10px;
+  padding: 12px;
+}
+body.compact .card {
+  flex: 0 1 420px;             /* 卡片宽度基准 420px，窄屏按内容收缩 */
+  min-width: 0;
+  padding: 10px 12px;
+}
+body.compact .card-head { margin-bottom: 8px; }
+body.compact .gpus { gap: 4px; min-width: 0; }
+body.compact .gpu { padding: 4px 6px; }
+
+/* 紧凑 GPU 表格：固定布局防溢出，型号列自动换行完整显示（不截断、不隐藏） */
+.ctable {
+  width: 100%;
+  table-layout: fixed;               /* 关键：固定布局，内容不会把卡片撑破 */
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.ctable th, .ctable td {
+  padding: 3px 6px;
+  border-bottom: 1px solid rgba(33, 38, 45, .6);
+}
+.ctable thead th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  border-bottom: 1px solid var(--border);
+}
+.ctable th:nth-child(1) { width: 6%; }   /* # */
+.ctable th:nth-child(3) { width: 12%; }  /* 利用率 */
+.ctable th:nth-child(4) { width: 10%; }  /* 温度 */
+.ctable th:nth-child(5) { width: 24%; }  /* 显存 */
+.ctable th:nth-child(6) { width: 12%; }  /* 功耗 */
+.ctable td.name {                        /* 型号列占剩余宽度，超长自动换行，完整可见 */
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ctable td.hl { font-weight: 700; }
+.ctable td.num { color: var(--muted); }
+
+.cmetric {
+  font-size: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  max-width: 100%;                      /* 单个指标不超出卡片 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cmetric .kv { color: var(--muted); margin-right: 4px; }
+.cmetric .vv { font-weight: 700; }
+
+/* ---------- 条形图视图：同服务器内所有 GPU 聚合到一个分组条形图 ---------- */
+/* 指标勾选栏（仅条形视图显示） */
+.bar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.bar-controls-label { font-size: 12px; color: var(--muted); }
+.bar-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+.bar-controls input { accent-color: var(--accent); }
+
+.barchart2 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);   /* 实际列数由 JS 按勾选指标设置 */
+  gap: 8px;
+}
+.bc2-group { display: flex; flex-direction: column; }
+.bc2-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+.bc2-title { font-size: 11px; color: var(--muted); }
+.bc2-cap { font-size: 9px; color: var(--muted); opacity: .75; }
+.bc2-bars {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  column-gap: 6px;
+  height: 132px;
+  padding-top: 18px;                       /* 顶部留白：容纳柱顶数值 */
+  border-bottom: 1px solid var(--border);  /* 基线 */
+  box-sizing: border-box;
+}
+.bc2-bars::before {                        /* 100% 参考刻度线（刻度上限） */
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed rgba(128, 146, 164, .28);
+}
+.bc2-bar { height: 100%; display: flex; align-items: flex-end; }
+.bc2-fill {
+  position: relative;
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  transition: height .35s ease;            /* 数值更新时柱高平滑过渡 */
+}
+.bc2-val {
+  position: absolute;
+  bottom: 100%;                            /* 紧贴柱顶 */
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;                          /* 基准值，实际大小由 JS 按柱宽内联覆盖 */
+  font-weight: 400;                        /* 轻细字重，避免与柱体抢视觉 */
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.bc2-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+.bc2-legend span { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); cursor: default; }
+.bc2-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+/* ---------- 表格视图：所有信息汇总到一个宽表 ---------- */
+.table-view {
+  padding: 12px 20px;
+  overflow-x: auto;               /* 列多时可横向滚动 */
+}
+.big-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.big-table th, .big-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  text-align: left;
+}
+.big-table thead th {
+  position: sticky;               /* 长表滚动时表头固定 */
+  top: 0;
+  background: var(--panel);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  border-bottom: 1px solid var(--border);
+  z-index: 1;
+}
+.big-table thead th.sortable { cursor: pointer; user-select: none; }
+.big-table thead th.sortable:hover { color: var(--accent); }
+.big-table tbody tr:hover { background: rgba(88, 166, 255, .06); }
+.big-table tbody tr.off td { opacity: .5; }
+.big-table td.st-on { color: var(--ok); }
+.big-table td.st-off { color: var(--off); }

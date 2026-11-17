@@ -1,0 +1,17 @@
+# Build output
+target/
+dist/
+*.class
+
+# Runtime / log files
+*.log
+*.pid
+*.tar.gz
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Local assets (screenshots / videos)
+素材/
