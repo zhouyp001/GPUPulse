@@ -6,7 +6,7 @@
 
     <groupId>com.monitor</groupId>
     <artifactId>server-monitor</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <packaging>pom</packaging>
     <name>server-monitor</name>
     <description>实时服务器指标监控：Agent 采集 -&gt; 纯 Netty 服务器 -&gt; 纯前端浏览器面板</description>
