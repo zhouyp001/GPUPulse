@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # 打包：生成自包含的 dist/agent 与 dist/server 两个发布包。
 # 用法：scripts/package.sh
-set -euo pipefail
+set -Eeuo pipefail
+trap 'echo "[ERR] 第 $LINENO 行执行失败: $BASH_COMMAND" >&2' ERR
 cd "$(dirname "$0")/.."
 
 echo "==> 构建模块 (mvn package)"
-mvn -q -DskipTests package
+mvn -DskipTests package
 
 echo "==> 拷贝依赖到各模块 target/lib"
-bash scripts/copy-libs.sh >/dev/null
+bash scripts/copy-libs.sh
 
 DIST="dist"
 rm -rf "$DIST"

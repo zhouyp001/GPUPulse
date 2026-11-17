@@ -8,6 +8,7 @@
 #
 # 目录可用环境变量覆盖：M2_ADD（jackson 等）、M2_LOCAL（netty 等）。
 set -euo pipefail
+trap 'echo "[ERR] copy-libs.sh 第 $LINENO 行执行失败: $BASH_COMMAND" >&2' ERR
 cd "$(dirname "$0")/.."
 
 M2A="${M2_ADD:-/d/workspace/addRespos}"
@@ -41,11 +42,11 @@ if [ -d "$M2A" ] && [ -d "$M2L" ]; then
   done
 else
   echo "==> 在线模式：用 maven-dependency 插件从 Maven 中央仓库解析依赖"
-  mvn -q dependency:copy-dependencies \
+  mvn dependency:copy-dependencies \
       -pl server -am \
       -DincludeScope=runtime \
       -DoutputDirectory="$(pwd)/server/target/lib"
-  mvn -q dependency:copy-dependencies \
+  mvn dependency:copy-dependencies \
       -pl agent -am \
       -DincludeScope=runtime \
       -DoutputDirectory="$(pwd)/agent/target/lib"
