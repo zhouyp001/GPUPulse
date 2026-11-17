@@ -3,6 +3,9 @@ name: release
 # 手动触发，最可控：在 Actions 页面点「Run workflow」，
 # 填版本号 + 勾选是否草稿，确认无误后再正式发布。
 on:
+  push:
+    tags:
+      - 'v*'  # 推送以 v 开头的 tag 时触发，如 v0.2.0
   workflow_dispatch:
     inputs:
       version:
@@ -30,6 +33,7 @@ jobs:
 
       - name: Build & package dist
         run: |
+          chmod +x scripts/package.sh
           scripts/package.sh
           tar -czf dist/agent.tar.gz -C dist agent
           tar -czf dist/server.tar.gz -C dist server
