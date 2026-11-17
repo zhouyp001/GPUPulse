@@ -40,6 +40,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
  * <ul>
  *   <li>POST /report       接收 Agent 上报的指标帧，更新注册表并广播给面板</li>
  *   <li>GET  /api/servers  返回全量快照（调试 / 非 WebSocket 客户端用）</li>
+ *   <li>GET  /api/gpu-load 返回各服务器 GPU 负载（按空闲度排序），供三方系统挑选空闲服务器</li>
  *   <li>其他 GET           从 web 目录提供静态文件（面板前端）</li>
  * </ul>
  */
@@ -74,11 +75,18 @@ public final class HttpApiHandler extends SimpleChannelInboundHandler<FullHttpRe
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest req) {
         String uri = req.uri();
         try {
-            if (req.method() == POST && uri.equals("/report")) {
+            String path = uri;
+            int q = path.indexOf('?');
+            if (q >= 0) {
+                path = path.substring(0, q);
+            }
+            if (req.method() == POST && path.equals("/report")) {
                 handleReport(ctx, req);
-            } else if (req.method() == GET && uri.equals("/api/servers")) {
+            } else if (req.method() == GET && path.equals("/api/servers")) {
                 sendJson(ctx, OK, registry.snapshot());
-            } else if (req.method() == POST && uri.equals("/api/servers/clear-offline")) {
+            } else if (req.method() == GET && path.equals("/api/gpu-load")) {
+                sendJson(ctx, OK, registry.gpuLoad(hasAllParam(uri)));
+            } else if (req.method() == POST && path.equals("/api/servers/clear-offline")) {
                 handleClearOffline(ctx);
             } else if (req.method() == GET) {
                 serveStatic(ctx, req, uri);
@@ -88,6 +96,23 @@ public final class HttpApiHandler extends SimpleChannelInboundHandler<FullHttpRe
         } finally {
             // SimpleChannelInboundHandler 会自动释放本次请求
         }
+    }
+
+    /** 解析查询参数 all：默认仅在线，all=true 时包含离线服务器。 */
+    private static boolean hasAllParam(String uri) {
+        int q = uri.indexOf('?');
+        if (q < 0) {
+            return false;
+        }
+        for (String pair : uri.substring(q + 1).split("&")) {
+            int eq = pair.indexOf('=');
+            String key = eq < 0 ? pair : pair.substring(0, eq);
+            String val = eq < 0 ? "true" : pair.substring(eq + 1);
+            if (key.equals("all")) {
+                return !(val.equals("0") || val.equalsIgnoreCase("false"));
+            }
+        }
+        return false;
     }
 
     private void handleReport(ChannelHandlerContext ctx, FullHttpRequest req) {
