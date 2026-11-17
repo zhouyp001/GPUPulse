@@ -3,8 +3,16 @@ name: build
 on:
   push:
     branches: [ main ]
+    paths:
+      - '**/*.java'
+      - '**/*.xml'
+      - '**/*.yml'
   pull_request:
     branches: [ main ]
+    paths:
+      - '**/*.java'
+      - '**/*.xml'
+      - '**/*.yml'
 
 jobs:
   build:
