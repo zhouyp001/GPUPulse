@@ -6,13 +6,13 @@ on:
     paths:
       - '**/*.java'
       - '**/*.xml'
-      - '**/*.yml'
+#      - '**/*.yml' #yml不做java编译，避免yml修改触发build
   pull_request:
     branches: [ main ]
     paths:
       - '**/*.java'
       - '**/*.xml'
-      - '**/*.yml'
+#      - '**/*.yml' #yml不做java编译，避免yml修改触发build
 
 jobs:
   build:
