@@ -1,6 +1,6 @@
 # 服务器监控
 
-浏览器端实时查看的多服务器指标监控：**Java Agent 采集 → 纯 Netty 中央服务 → 纯前端面板（WebSocket 推送，不落库）**。使用示例：[docs/USERCASE.md](docs/USERCASE.md)。
+浏览器端实时查看的多服务器指标监控：**Java Agent 采集 → 纯 Netty 中央服务 → 纯前端面板（WebSocket 推送，不落库）**。使用示例：[docs/USECASE.md](docs/USECASE.md)。
 
 ## 模块
 
