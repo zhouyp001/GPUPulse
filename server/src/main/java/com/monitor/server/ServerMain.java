@@ -56,7 +56,13 @@ public class ServerMain {
                         protected void initChannel(SocketChannel ch) {
                             ch.pipeline()
                                     .addLast(new HttpServerCodec())
-                                    .addLast(new HttpObjectAggregator(1024 * 1024))
+                                    .addLast(new HttpObjectAggregator(1024 * 1024));
+                            // MCP 面可开关：关闭时整个 /mcp 处理器不进管道，进程行为与未接入 MCP 时一致
+                            if (cfg.mcpEnabled()) {
+                                ch.pipeline().addLast(
+                                        new com.monitor.server.mcp.McpHttpHandler(registry, cfg));
+                            }
+                            ch.pipeline()
                                     .addLast(new WebSocketServerProtocolHandler("/ws"))
                                     .addLast(new HttpApiHandler(registry, panels, webRoot))
                                     .addLast(new PanelWebSocketHandler(registry, panels));

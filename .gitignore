@@ -15,3 +15,6 @@ dist/
 
 # Local assets (screenshots / videos)
 素材/
+openspec/
+.claude/
+.scratch/

@@ -31,4 +31,11 @@ public class ServerConfig {
     public String webDir()     { return get("server.web.dir", "web"); }
     public long offlineMs()    { return getInt("server.offline.ms", 10000); }
     public long syncIntervalMs(){ return getInt("server.sync.interval.ms", 3000); }
+
+    /** MCP 端点开关：false 时整个 MCP 面不加载，进程行为与未接入时一致。 */
+    public boolean mcpEnabled() { return Boolean.parseBoolean(get("server.mcp.enabled", "true")); }
+    /** MCP 端点路径（去掉查询串后的精确匹配）。 */
+    public String mcpPath()     { return get("server.mcp.path", "/mcp"); }
+    /** MCP 可选共享 token：非空时要求请求携带 Authorization: Bearer <token>；留空=开放。 */
+    public String mcpToken()    { return get("server.mcp.token", ""); }
 }

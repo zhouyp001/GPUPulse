@@ -8,7 +8,7 @@
 |---|---|
 | `common` | 指标帧模型 `MetricFrame` / `GpuInfo` + JSON 工具（Agent/服务器/前端共用契约） |
 | `agent` | 被监控端：GPU 采集器（nvidia-smi 解析）+ 自定义指标 SPI + HTTP 上报（采集/上报解耦，断线指数退避重连） |
-| `server` | 纯 Netty：接收上报（`/report`）、WebSocket 广播（`/ws`）、托管 `web/` 静态面板、清空离线记录（`POST /api/servers/clear-offline`）、GPU 负载查询（`GET /api/gpu-load`） |
+| `server` | 纯 Netty：接收上报（`/report`）、WebSocket 广播（`/ws`）、托管 `web/` 静态面板、清空离线记录（`POST /api/servers/clear-offline`）、GPU 负载查询（`GET /api/gpu-load`）、MCP 端点（`/mcp`，AI 查询面，可开关） |
 | `web` | 纯 HTML/CSS/JS 面板：Canvas 环形仪表 + 精简表格双视图 + 断线重连，无框架、无构建 |
 
 ## 构建
@@ -103,6 +103,68 @@ curl -s http://<监控机IP>:8080/api/gpu-load | jq -r '.servers[0].server'
 
 - `GET /api/servers`：全量快照（调试 / 非 WebSocket 客户端用）。
 - `POST /api/servers/clear-offline`：清空所有离线记录（在线保留）。
+
+## MCP 端点（AI 查询面）
+
+中央服务内置一个 **MCP（Model Context Protocol）** 端点，让 AI 客户端（Claude Desktop / Claude Code / 支持 MCP 的 agent）**直接查询实时监控数据**。只读、数据来自内存注册表最新帧、不落库，与 `GET /api/gpu-load` 同源。
+
+> 协议与请求/响应报文介绍（三类抽象的逐方法示例）：[docs/MONITOR-MCP.md](docs/MONITOR-MCP.md)。
+
+- **路径**：`/mcp`（Streamable HTTP：POST 收 JSON-RPC 2.0，GET 拉 SSE keep-alive 事件流；无会话状态）
+- **协议版本**：兼容 `2025-06-18` 与 `2024-11-05`，`initialize` 时按客户端请求回对应版本
+- **开关**：`server.mcp.enabled=false` 时整个 MCP 面不加载，进程行为与未接入时一致
+- **鉴权**：可选共享 token（见下）
+
+### 暴露的内容
+
+| 类别 | 名称 | 说明 |
+|---|---|---|
+| 工具 | `list_servers` | 列出被监控服务器（可选 `include_offline`），含 online / gpuCount / load |
+| 工具 | `get_server` | 某台服务器最新指标帧：gpus[] + metrics{}（参数 `server`，必填） |
+| 工具 | `gpu_load` | 各服务器 GPU 负载按 load 升序（最空闲在前），与 `GET /api/gpu-load` 一致 |
+| 资源 | `monitor://servers` | 服务器清单（含离线） |
+| 资源 | `monitor://servers/{id}` | 指定服务器最新指标帧（`resources/list` 会动态枚举当前已知 id） |
+| 提示词 | `recommend_idle_server` | 引导 agent 挑一台最空闲服务器 |
+| 提示词 | `gpu_health_summary` | 引导 agent 汇总某台服务器 GPU 健康状态（参数 `server`，必填） |
+
+> **语义如实**：`gpu_load` / `list_servers` 对**离线**服务器保留其上次帧的 `load`（与 HTTP 接口实际行为一致；接口 javadoc 中「离线 load=-1」的说法以实际行为为准）。
+
+### 从 Claude Code 连接
+
+仓库根目录的 [.mcp.json](.mcp.json) 已预配好 `monitor`：
+
+```json
+{
+  "mcpServers": {
+    "monitor": { "type": "http", "url": "http://localhost:8080/mcp" }
+  }
+}
+```
+
+启动中央服务后（`scripts/run-server.sh`），在 Claude Code 里按 `Shift+Tab` 即可看到 `monitor` 服务器与 3 个只读工具。其他 MCP 客户端同理配置该 URL。
+
+### 手动验证（curl 示例）
+
+```bash
+# 握手：返回协议版本 / 能力 / serverInfo
+curl -s -X POST http://localhost:8080/mcp \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{}}}'
+# 查 GPU 负载（等价于 GET /api/gpu-load）
+curl -s -X POST http://localhost:8080/mcp \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"gpu_load","arguments":{}}}'
+```
+
+### 配置
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `server.mcp.enabled` | `true` | MCP 面开关；`false` 时不加载 `/mcp` |
+| `server.mcp.path` | `/mcp` | 端点路径 |
+| `server.mcp.token` | （空） | 非空时要求每个请求带 `Authorization: Bearer <token>`；留空 = 开放 |
+
+```bash
+JAVA_TOOL_OPTIONS="-Dserver.mcp.token=secret123" scripts/run-server.sh
+```
 
 ## 打包部署（生成两个自包含发布包）
 

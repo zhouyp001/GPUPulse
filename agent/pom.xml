@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.monitor</groupId>
         <artifactId>server-monitor</artifactId>
-        <version>0.1.0</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>monitor-agent</artifactId>
